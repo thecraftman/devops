@@ -1,0 +1,42 @@
+name: Angular CI/CD
+
+on:
+  pull_requests:
+    branches:
+      - main # Change this to your default branch if it's not 'main'
+
+jobs:
+  angular-deployment:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Setup Node
+      uses: actions/setup-node@v2
+      with:
+        node-version: '16' # Specify the Node version you are using
+
+    - name: Install Dependencies
+      run: |
+        cd angular # navigate to the Angular project directory
+        npm install
+
+    - name: Install Angular CLI
+      run: npm install -g @angular/cli
+
+    - name: Build
+      run: |
+        cd angular # ensure you're in the Angular project directory
+        ng build --configuration production
+
+    - name: Deploy Angular to server
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.ANGULAR_SERVER_IP }}
+        username: ${{ secrets.ANGULAR_SERVER_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+            npm install
+            npm run build
+            npm run test -- --watch=false --no-progress --browsers=ChromeHeadlessCI

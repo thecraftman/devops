@@ -1,0 +1,37 @@
+name: Laravel CI/CD
+
+on:
+  pull_requests:
+    branches:
+      - main # Change this to your default branch if it's not 'main'
+
+jobs:
+  laravel-deployment:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '7.4'
+
+    - name: Install Dependencies
+      run: |
+        cd devops # navigate to the Laravel project directory
+        composer install --prefer-dist --no-progress --no-suggest
+
+    # Use an 'if' condition to skip this step based on a condition
+    - name: Deploy Laravel to server
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.LARAVEL_SERVER_IP }}
+        username: ${{ secrets.SERVER_LARAVEL_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          php -r "file_exists('.env') || copy('.env.example', '.env');"
+          composer install --prefer-dist --no-progress --no-suggest
+          php artisan key:generate
+          chmod -R 777 storage bootstrap/cache
+          
